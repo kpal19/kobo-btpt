@@ -364,8 +364,7 @@ void BluetoothPageTurner::run()
                     e.value == test.value) {
 
                     /* Check Long/Short Logic */
-                    /* Threshold: 500ms for long press */
-                    bool isPhysicalLong = (duration_ms > 500);
+                    bool isPhysicalLong = (duration_ms > LONG_PRESS_THRESHOLD_MS);
 
                     /* If config demands LONG but press was short, skip */
                     if (rule.type == TYPE_LONG && !isPhysicalLong) continue;

@@ -12,14 +12,17 @@
 #include <QThread>
 #include <QWaitCondition>
 
-/* NEW: Define the types of presses we support */
+/* Threshold in milliseconds to distinguish Short vs Long press */
+#define LONG_PRESS_THRESHOLD_MS 500
+
+/* Define the types of presses we support */
 enum PressType {
     TYPE_ANY = 0,
     TYPE_SHORT,
     TYPE_LONG
 };
 
-/* NEW: A struct to hold the configuration for a single action */
+/* A struct to hold the configuration for a single action */
 struct ConfigRule {
     struct input_event trigger; /* The event code (type, code, value) */
     QString method;             /* The function name to call */
