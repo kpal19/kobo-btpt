@@ -12,11 +12,31 @@
 #include <QThread>
 #include <QWaitCondition>
 
+/* NEW: Define the types of presses we support */
+enum PressType {
+    TYPE_ANY = 0,
+    TYPE_SHORT,
+    TYPE_LONG
+};
+
+/* NEW: A struct to hold the configuration for a single action */
+struct ConfigRule {
+    struct input_event trigger; /* The event code (type, code, value) */
+    QString method;             /* The function name to call */
+    PressType type;             /* Short, Long, or Any */
+};
+
 class Device
 {
 public:
-	int fd;
-	QList<QPair<struct input_event, QString>> cfg;
+    int fd;
+
+    /* CHANGED: Use our new ConfigRule instead of QPair */
+    QList<ConfigRule> cfg;
+
+    /* NEW: Track the timestamp of when a key was pressed down (value=1) */
+    /* Key: Event Code (e.g., KEY_A), Value: Timestamp */
+    QMap<uint16_t, struct timeval> pressTimes;
 };
 
 class BluetoothPageTurner : public QThread
