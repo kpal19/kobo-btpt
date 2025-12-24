@@ -120,7 +120,9 @@ bool BluetoothPageTurner::addDevice(
 
 		QString line = in.readLine();
 		QList<QString> parts = line.split(" ", QString::SkipEmptyParts);
-		if (parts.size() != 4) {
+
+        /* CHANGED: Allow 4 parts (legacy) or 5 parts (new) */
+		if (parts.size() != 4 || parts.size() != 5) {
 			nh_log("invalid config line: %s",
 			       line.toStdString().c_str());
 			devices.remove(uniq);
@@ -154,8 +156,20 @@ bool BluetoothPageTurner::addDevice(
 			return false;
 		}
 
-		QPair<struct input_event, QString> map(event, parts[0]);
-		device.cfg.append(map);
+        /* NEW: Create and populate ConfigRule */
+        ConfigRule rule;
+        rule.trigger = event;
+        rule.method = parts[0];
+        rule.type = TYPE_ANY; // Default to old behavior
+
+        /* Check for optional 5th column */
+        if (parts.size() >= 5) {
+            QString typeStr = parts[4].toUpper();
+            if (typeStr == "LONG") rule.type = TYPE_LONG;
+            else if (typeStr == "SHORT") rule.type = TYPE_SHORT;
+        }
+
+        device.cfg.append(rule);
 	}
 
 	nh_log("acquired device %s: %s",
@@ -322,34 +336,57 @@ void BluetoothPageTurner::run()
 				continue;
 			}
 
-			if (e.type == 0x00 &&
-			    e.code == 0x00 &&
-			    e.value == 0x0001) {
-				nh_log("lost device");
-				it = devices.erase(it);
-				continue;
-			}
+            /* Logic to handle Long vs Short press */
+            /* If this is a key press (value 1), just record the time */
+            if (e.value == 1) {
+                device.pressTimes[e.code] = e.time;
+                // We typically don't trigger actions on press for page turns,
+                // so we can choose to continue or let it check TYPE_ANY rules.
+                // For this implementation, we allow immediate triggers only if configured.
+            }
 
-			for (int i = 0; i < device.cfg.size(); i++) {
-				auto &pair = device.cfg[i];
-				struct input_event test = pair.first;
-				if (e.type == test.type &&
-				    e.code == test.code &&
-				    e.value == test.value) {
-					/* Update Bluetooth heartbeat time */
-					clock_gettime(CLOCK_MONOTONIC,
-					              &last_event);
+            /* Calculate duration if this is a release (value 0) */
+            long duration_ms = 0;
+            if (e.value == 0 && device.pressTimes.contains(e.code)) {
+                struct timeval start = device.pressTimes.take(e.code);
+                /* Calculate difference in milliseconds */
+                duration_ms = (e.time.tv_sec - start.tv_sec) * 1000 +
+                              (e.time.tv_usec - start.tv_usec) / 1000;
+            }
 
-					/* Update PowerManager::timeLastUsed */
-					emit notify();
+            for (int i = 0; i < device.cfg.size(); i++) {
+                ConfigRule &rule = device.cfg[i];
+                struct input_event test = rule.trigger;
 
-					/* Invoke the configured method */
-					const char *method = pair.second
-						.toStdString().c_str();
-					invokeMainWindowController(method);
-				}
-			}
+                /* Check if event matches config */
+                if (e.type == test.type &&
+                    e.code == test.code &&
+                    e.value == test.value) {
 
+                    /* Check Long/Short Logic */
+                    /* Threshold: 500ms for long press */
+                    bool isPhysicalLong = (duration_ms > 500);
+
+                    /* If config demands LONG but press was short, skip */
+                    if (rule.type == TYPE_LONG && !isPhysicalLong) continue;
+
+                    /* If config demands SHORT but press was long, skip */
+                    if (rule.type == TYPE_SHORT && isPhysicalLong) continue;
+
+                    /* Match confirmed */
+
+                    /* Update Bluetooth heartbeat time */
+                    clock_gettime(CLOCK_MONOTONIC,
+                                  &last_event);
+
+                    /* Update PowerManager::timeLastUsed */
+                    emit notify();
+
+                    /* Invoke the configured method */
+                    const char *method = rule.method.toStdString().c_str();
+                    invokeMainWindowController(method);
+                }
+            }
 			it++;
 		}
 	}
