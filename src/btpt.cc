@@ -121,8 +121,8 @@ bool BluetoothPageTurner::addDevice(
 		QString line = in.readLine();
 		QList<QString> parts = line.split(" ", QString::SkipEmptyParts);
 
-        /* CHANGED: Allow 4 parts (legacy) or 5 parts (new) */
-		if (parts.size() != 4 || parts.size() != 5) {
+        /* invalid if it is NEITHER 4 NOR 5 columns*/
+		if (parts.size() != 4 && parts.size() != 5) {
 			nh_log("invalid config line: %s",
 			       line.toStdString().c_str());
 			devices.remove(uniq);
