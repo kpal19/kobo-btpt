@@ -1,2 +1,26 @@
+# Format:
+# METHOD  TYPE  CODE  VALUE  [MODIFIER]
+#
+# COLUMN DEFINITIONS:
+# 1. METHOD:    The internal Kobo function to call.
+# 2. TYPE:      The Linux Input Event Type. Usually 'EV_KEY' for buttons or 'EV_ABS' for joysticks.
+# 3. CODE:      The specific button code. Examples: KEY_VOLUMEUP, KEY_VOLUMEDOWN, BTN_A, BTN_B
+# 4. VALUE:     The state of the button.
+#               1 = Press (Trigger immediately when button goes down)
+#               0 = Release (Trigger when button is let go)
+# 5. MODIFIER:  (Optional) Time-based filtering.
+#               SHORT = Only trigger if held for less than 500ms.
+#               LONG  = Only trigger if held for more than 500ms.
+#               (If omitted, action triggers on any duration).
+#
+# ! IMPORTANT RULE FOR LONG/SHORT PRESS !
+# If you use the MODIFIER column (SHORT or LONG), the VALUE column MUST be 0.
+# Why? To measure how long you held a button, the system must wait until you
+# release it. If you use '1' (Press), the action will fire immediately.
+# ------------------------------------------------------------------------------
+#
+# Short press turns the page forward
 nextPage EV_KEY KEY_VOLUMEUP 0 SHORT
+
+# Long press (held >500ms) goes back
 prevPage EV_KEY KEY_VOLUMEUP 0 LONG
