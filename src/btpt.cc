@@ -121,7 +121,7 @@ bool BluetoothPageTurner::addDevice(
 		QString line = in.readLine();
 		QList<QString> parts = line.split(" ", QString::SkipEmptyParts);
 
-        /* invalid if it is NEITHER 4 NOR 5 columns*/
+        /* invalid if it is neither 4 nor 5 columns*/
 		if (parts.size() != 4 && parts.size() != 5) {
 			nh_log("invalid config line: %s",
 			       line.toStdString().c_str());
@@ -156,7 +156,7 @@ bool BluetoothPageTurner::addDevice(
 			return false;
 		}
 
-        /* NEW: Create and populate ConfigRule */
+        /* Create and populate ConfigRule */
         ConfigRule rule;
         rule.trigger = event;
         rule.method = parts[0];
@@ -340,9 +340,6 @@ void BluetoothPageTurner::run()
             /* If this is a key press (value 1), just record the time */
             if (e.value == 1) {
                 device.pressTimes[e.code] = e.time;
-                // We typically don't trigger actions on press for page turns,
-                // so we can choose to continue or let it check TYPE_ANY rules.
-                // For this implementation, we allow immediate triggers only if configured.
             }
 
             /* Calculate duration if this is a release (value 0) */

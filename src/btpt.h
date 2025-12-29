@@ -34,10 +34,10 @@ class Device
 public:
     int fd;
 
-    /* CHANGED: Use our new ConfigRule instead of QPair */
+    /* new ConfigRule instead of QPair */
     QList<ConfigRule> cfg;
 
-    /* NEW: Track the timestamp of when a key was pressed down (value=1) */
+    /* Track the timestamp of when a key was pressed down (value=1) */
     /* Key: Event Code (e.g., KEY_A), Value: Timestamp */
     QMap<uint16_t, struct timeval> pressTimes;
 };
